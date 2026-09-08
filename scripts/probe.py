@@ -19,8 +19,11 @@ USAGE = """usage: scripts/probe.py <command>
 
 def herdr(*args):
     """Run a herdr CLI command and return its parsed JSON result."""
+    # Herdr writes UTF-8 whatever the locale says; on Windows the locale is a
+    # code page that cannot spell a label's `›`.
     out = subprocess.run(
-        ["herdr", *args], capture_output=True, text=True, check=True
+        ["herdr", *args],
+        capture_output=True, text=True, encoding="utf-8", check=True,
     ).stdout
     payload = json.loads(out)
     if "error" in payload:
@@ -74,6 +77,8 @@ def main():
     if len(sys.argv) != 2 or sys.argv[1] not in COMMANDS:
         print(USAGE, file=sys.stderr)
         return 1
+    # The same on the way out: print what was read, not what the locale allows.
+    sys.stdout.reconfigure(encoding="utf-8")
     try:
         COMMANDS[sys.argv[1]]()
     except KeyboardInterrupt:
